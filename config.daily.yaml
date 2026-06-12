@@ -1,0 +1,36 @@
+# Daily-frequency trading profile: 15-minute candles with a mean-reversion
+# strategy produce roughly 0.5-2 trades per day depending on volatility.
+#
+# Use:  python main.py --config config.daily.yaml run
+#
+# Expectations, stated plainly: a sound configuration of this profile targets
+# single-digit percent per MONTH with losing stretches, not daily profits.
+# Before trusting any parameters, validate them on real data:
+#   python main.py --config config.daily.yaml optimize --limit 3000
+
+exchange:
+  testnet: true
+
+trading:
+  symbol: BTC/USDT
+  timeframe: 15m
+  candle_history: 200
+
+strategy:
+  name: rsi_reversion
+  params:
+    period: 14
+    oversold: 30.0
+    overbought: 70.0
+
+risk:
+  # Tighter than the 1h profile: more frequent trades demand smaller exposure,
+  # both to survive losing streaks and because fees scale with trade count.
+  max_position_pct: 0.05
+  stop_loss_pct: 0.01
+  take_profit_pct: 0.02
+  max_daily_loss_pct: 0.03
+  min_order_quote: 10.0
+
+loop:
+  poll_interval_seconds: 30
