@@ -1,0 +1,31 @@
+exchange:
+  # When true, orders go to the Binance spot testnet (https://testnet.binance.vision/).
+  # Keep this true until you have validated your strategy.
+  testnet: true
+
+trading:
+  symbol: BTC/USDT
+  timeframe: 1h
+  # Number of candles fetched each cycle (must cover the slowest indicator window).
+  candle_history: 200
+
+strategy:
+  name: sma_crossover
+  params:
+    fast_period: 9
+    slow_period: 21
+
+risk:
+  # Fraction of the quote-currency balance committed per position.
+  max_position_pct: 0.10
+  # Exit if price falls this far below entry.
+  stop_loss_pct: 0.02
+  # Exit if price rises this far above entry.
+  take_profit_pct: 0.04
+  # Stop opening new positions for the day after losing this fraction of starting equity.
+  max_daily_loss_pct: 0.05
+  # Hard floor: never place an order smaller than this much quote currency.
+  min_order_quote: 10.0
+
+loop:
+  poll_interval_seconds: 60

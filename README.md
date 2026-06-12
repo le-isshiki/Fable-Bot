@@ -1,0 +1,62 @@
+# Fable-Bot
+
+An automated spot-trading bot for Binance, built around three safety layers:
+
+1. **Dry-run by default** — `python main.py run` paper-trades against live prices; no order ever leaves the process unless you pass `--live`.
+2. **Testnet by default** — even with `--live`, orders go to the [Binance spot testnet](https://testnet.binance.vision/) until you set `exchange.testnet: false` in `config.yaml` **and** export `FABLE_BOT_CONFIRM_LIVE=yes`.
+3. **Risk manager** — stop-loss, take-profit, per-trade position sizing, and a daily loss cap are enforced outside the strategy, so a misbehaving strategy can't bypass them.
+
+## Setup
+
+```bash
+python -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+cp .env.example .env   # then add your API keys (not needed for backtesting/dry-run)
+```
+
+## Usage
+
+```bash
+# Backtest the configured strategy on the last 1000 candles
+python main.py backtest --limit 1000
+
+# Paper trade live prices (no API keys required, no orders placed)
+python main.py run
+
+# Trade on the Binance spot testnet (requires testnet API keys in .env)
+python main.py run --live
+
+# Trade real funds: set exchange.testnet: false in config.yaml, then
+FABLE_BOT_CONFIRM_LIVE=yes python main.py run --live
+```
+
+## Configuration
+
+Everything lives in `config.yaml`:
+
+| Section | What it controls |
+|---|---|
+| `exchange.testnet` | Testnet vs. real Binance for `--live` orders |
+| `trading` | Symbol, candle timeframe, history depth |
+| `strategy` | Strategy name + parameters |
+| `risk` | Position size %, stop-loss %, take-profit %, daily loss cap, min order size |
+| `loop` | Polling interval |
+
+API keys are read from the environment (`.env` is supported), never from `config.yaml`.
+
+## Strategies
+
+- **`sma_crossover`** (default) — trend-following; buys when the fast SMA crosses above the slow SMA, sells on the reverse cross. Params: `fast_period`, `slow_period`.
+- **`rsi_reversion`** — mean reversion; buys when RSI drops below `oversold`, sells above `overbought`. Params: `period`, `oversold`, `overbought`.
+
+To add your own, subclass `Strategy` in `fable_bot/strategies/` and register it in `fable_bot/strategies/__init__.py`. Strategies only emit BUY/SELL/HOLD signals; entries, exits, and sizing stay with the trader and risk manager.
+
+## Tests
+
+```bash
+pytest
+```
+
+## Disclaimer
+
+Trading cryptocurrency is risky and this software is provided as-is, with no warranty of profitability or correctness. Backtest results do not guarantee future performance. Start on the testnet, use money you can afford to lose, and review every line before going live.
