@@ -8,8 +8,13 @@ An automated spot-trading bot for Binance, built around three safety layers:
 
 ## Setup
 
+Requires **Python 3.10+** (`ccxt` no longer installs on 3.9). macOS ships an older
+Python with the Xcode command-line tools, so check `python3 --version` first and, if
+it reports 3.9 or older, install a current one with `brew install python` or from
+[python.org/downloads](https://www.python.org/downloads/) (then open a new terminal).
+
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # then add your API keys (not needed for backtesting/dry-run)
 ```
