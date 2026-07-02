@@ -67,6 +67,12 @@ class Exchange:
     def last_price(self, symbol: str) -> float:
         return float(self.data_client.fetch_ticker(symbol)["last"])
 
+    def paper_balances(self) -> dict[str, float]:
+        return dict(self._paper)
+
+    def set_paper_balances(self, balances: dict[str, float]) -> None:
+        self._paper.update({k: float(v) for k, v in balances.items()})
+
     def balances(self, symbol: str) -> tuple[float, float]:
         """Return (base_free, quote_free) for the given symbol, e.g. (BTC, USDT)."""
         if self.dry_run:

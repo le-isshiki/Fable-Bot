@@ -5,6 +5,7 @@ An automated spot-trading bot for Binance, built around three safety layers:
 1. **Dry-run by default** — `python main.py run` paper-trades against live prices; no order ever leaves the process unless you pass `--live`.
 2. **Testnet by default** — even with `--live`, orders go to the [Binance spot testnet](https://testnet.binance.vision/) until you set `exchange.testnet: false` in `config.yaml` **and** export `FABLE_BOT_CONFIRM_LIVE=yes`. Market data always comes from the production public API (the testnet's candle history is tiny and its order book is a toy); only orders are routed to the testnet.
 3. **Risk manager** — stop-loss, take-profit, per-trade position sizing, and a daily loss cap are enforced outside the strategy, so a misbehaving strategy can't bypass them.
+4. **Restart-safe** — the open position and daily-loss state persist to `trading.state_file` and are restored on startup, so a crash or reboot can't orphan a position beyond the reach of its stop-loss. Live restores are reconciled against actual exchange balances, and state from one mode (dry-run/testnet/live) is never loaded into another.
 
 ## Setup
 

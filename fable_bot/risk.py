@@ -51,6 +51,20 @@ class RiskManager:
             return False
         return True
 
+    def snapshot(self) -> dict:
+        """Serializable daily-loss state, for persistence across restarts."""
+        return {
+            "day": self._day.isoformat() if self._day else None,
+            "day_start_equity": self._day_start_equity,
+            "day_realized_pnl": self._day_realized_pnl,
+        }
+
+    def restore(self, snap: dict) -> None:
+        day = snap.get("day")
+        self._day = date.fromisoformat(day) if day else None
+        self._day_start_equity = float(snap.get("day_start_equity", 0.0))
+        self._day_realized_pnl = float(snap.get("day_realized_pnl", 0.0))
+
     def _roll_day(self, today: date, equity: float | None = None) -> None:
         if self._day != today:
             self._day = today

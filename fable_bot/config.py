@@ -19,6 +19,7 @@ class TradingConfig:
     symbol: str = "BTC/USDT"
     timeframe: str = "1h"
     candle_history: int = 200
+    state_file: str = "state.json"
 
 
 @dataclass

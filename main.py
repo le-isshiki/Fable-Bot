@@ -15,6 +15,7 @@ from fable_bot.config import load_config
 from fable_bot.data import load_csv
 from fable_bot.exchange import Exchange
 from fable_bot.optimize import format_report, optimize
+from fable_bot.state import StateStore
 from fable_bot.strategies import build_strategy
 from fable_bot.trader import Trader
 
@@ -42,7 +43,8 @@ def cmd_run(args: argparse.Namespace) -> int:
             return 1
 
     exchange = Exchange(cfg.exchange, dry_run=dry_run, paper_quote_balance=args.paper_balance)
-    Trader(cfg, exchange).run_forever()
+    store = StateStore(cfg.trading.state_file)
+    Trader(cfg, exchange, store=store).run_forever()
     return 0
 
 

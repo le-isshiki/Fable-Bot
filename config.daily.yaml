@@ -15,6 +15,8 @@ trading:
   symbol: BTC/USDT
   timeframe: 15m
   candle_history: 200
+  # Separate state file so this profile never collides with the 1h profile.
+  state_file: state.daily.json
 
 strategy:
   name: rsi_reversion

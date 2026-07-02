@@ -8,6 +8,8 @@ trading:
   timeframe: 1h
   # Number of candles fetched each cycle (must cover the slowest indicator window).
   candle_history: 200
+  # Open position and daily risk state survive restarts here.
+  state_file: state.json
 
 # Top walk-forward result on 3000 hourly candles (2026-07-01):
 # +0.18% out-of-sample net of fees, 0.70% max drawdown, 11 trades, 45% win rate.
