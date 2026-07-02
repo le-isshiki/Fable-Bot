@@ -1,12 +1,15 @@
-# Daily-frequency trading profile: 15-minute candles with a mean-reversion
-# strategy produce roughly 0.5-2 trades per day depending on volatility.
+# Daily-frequency trading profile: at most one entry per day by construction.
+# day_breakout is the classic previous-day-range volatility breakout (Larry
+# Williams style): buy only when price decisively escapes yesterday's range,
+# flatten before the UTC day rolls over.
 #
 # Use:  python main.py --config config.daily.yaml run
 #
 # Expectations, stated plainly: a sound configuration of this profile targets
 # single-digit percent per MONTH with losing stretches, not daily profits.
+# Many days it will correctly do nothing — no breakout, no trade.
 # Before trusting any parameters, validate them on real data:
-#   python main.py --config config.daily.yaml optimize --limit 3000
+#   python main.py --config config.daily.yaml optimize --limit 8000
 
 exchange:
   testnet: true
@@ -15,13 +18,14 @@ trading:
   symbol: BTC/USDT
   timeframe: 15m
   candle_history: 200
+  # Separate state file so this profile never collides with the 1h profile.
+  state_file: state.daily.json
 
 strategy:
-  name: rsi_reversion
+  name: day_breakout
   params:
-    period: 14
-    oversold: 30.0
-    overbought: 70.0
+    range_mult: 0.5
+    trend_period: 0
 
 risk:
   # Tighter than the 1h profile: more frequent trades demand smaller exposure,

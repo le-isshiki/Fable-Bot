@@ -1,0 +1,10 @@
+services:
+  fable-bot:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    volumes:
+      # Keep position/risk state on the host so container restarts are safe.
+      # Run `touch state.json` once before `docker compose up`, or Docker
+      # will create a directory in its place.
+      - ./state.json:/app/state.json

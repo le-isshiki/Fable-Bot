@@ -15,6 +15,10 @@ from fable_bot.backtest import BacktestResult, run_backtest
 from fable_bot.config import RiskConfig
 from fable_bot.strategies import build_strategy
 
+# A test result with fewer trades than this is an anecdote, not evidence:
+# one lucky trade with near-zero drawdown would otherwise top the ranking.
+MIN_TEST_TRADES = 5
+
 # Parameter grids per strategy. Values are deliberately coarse: fine-grained
 # grids mostly find noise, not signal.
 PARAM_GRIDS: dict[str, dict[str, list]] = {
@@ -32,6 +36,16 @@ PARAM_GRIDS: dict[str, dict[str, list]] = {
         "slow_period": [21, 26, 35],
         "signal_period": [9],
     },
+    "trend_pullback": {
+        "trend_period": [50, 100, 200],
+        "rsi_period": [7, 14],
+        "entry_rsi": [35.0, 40.0, 45.0],
+        "exit_rsi": [60.0, 70.0],
+    },
+    "day_breakout": {
+        "range_mult": [0.3, 0.5, 0.7],
+        "trend_period": [0, 100],
+    },
 }
 
 
@@ -45,6 +59,22 @@ class Candidate:
     def score(self, result: BacktestResult) -> float:
         """Return penalized by drawdown — high return with deep drawdowns ranks low."""
         return result.return_pct - result.max_drawdown_pct
+
+
+def buy_and_hold(candles: list[list[float]]) -> tuple[float, float]:
+    """(return, max drawdown) of simply holding from first to last close.
+
+    The baseline every strategy must justify itself against — though note
+    the exposure difference: strategies here risk only max_position_pct of
+    the balance at a time, buy-and-hold risks all of it.
+    """
+    prices = [c[4] for c in candles]
+    peak = prices[0]
+    max_dd = 0.0
+    for p in prices:
+        peak = max(peak, p)
+        max_dd = max(max_dd, (peak - p) / peak)
+    return (prices[-1] - prices[0]) / prices[0], max_dd
 
 
 def _param_combos(grid: dict[str, list]) -> list[dict]:
@@ -89,10 +119,11 @@ def optimize(
                                  starting_balance=starting_balance, fee_pct=fee_pct)
 
     # A config that never trades out-of-sample proves nothing — don't let its
-    # flat 0%/0% outrank configs with real test evidence.
+    # flat 0%/0% outrank configs with real test evidence. Configs with only a
+    # handful of test trades rank below those with enough trades to mean something.
     traded = [c for c in finalists if c.test.trades > 0]
     finalists = traded or finalists
-    finalists.sort(key=lambda c: c.score(c.test), reverse=True)
+    finalists.sort(key=lambda c: (c.test.trades >= MIN_TEST_TRADES, c.score(c.test)), reverse=True)
     return finalists[:top_n]
 
 
@@ -105,13 +136,21 @@ def format_report(results: list[Candidate], total_candles: int, timeframe: str) 
         f"{'#':>2}  {'strategy':<15} {'params':<42} {'train ret':>9} {'test ret':>9} "
         f"{'test dd':>8} {'trades':>6} {'win%':>5}",
     ]
+    thin_evidence = False
     for i, c in enumerate(results, 1):
         params = ", ".join(f"{k}={v:g}" if isinstance(v, float) else f"{k}={v}"
                            for k, v in c.params.items())
+        mark = "*" if c.test.trades < MIN_TEST_TRADES else " "
+        thin_evidence = thin_evidence or mark == "*"
         lines.append(
             f"{i:>2}  {c.strategy:<15} {params:<42} {c.train.return_pct:>8.2%} "
             f"{c.test.return_pct:>8.2%} {c.test.max_drawdown_pct:>7.2%} "
-            f"{c.test.trades:>6} {c.test.win_rate:>5.0%}"
+            f"{c.test.trades:>5}{mark} {c.test.win_rate:>5.0%}"
+        )
+    if thin_evidence:
+        lines.append(
+            f"\n* fewer than {MIN_TEST_TRADES} out-of-sample trades — an anecdote, not evidence; "
+            "such configs rank below better-evidenced ones regardless of return."
         )
     lines.append(
         "\nRead 'test ret' (unseen data), not 'train ret'. A big gap between the two "

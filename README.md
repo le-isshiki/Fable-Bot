@@ -3,13 +3,19 @@
 An automated spot-trading bot for Binance, built around three safety layers:
 
 1. **Dry-run by default** — `python main.py run` paper-trades against live prices; no order ever leaves the process unless you pass `--live`.
-2. **Testnet by default** — even with `--live`, orders go to the [Binance spot testnet](https://testnet.binance.vision/) until you set `exchange.testnet: false` in `config.yaml` **and** export `FABLE_BOT_CONFIRM_LIVE=yes`.
+2. **Testnet by default** — even with `--live`, orders go to the [Binance spot testnet](https://testnet.binance.vision/) until you set `exchange.testnet: false` in `config.yaml` **and** export `FABLE_BOT_CONFIRM_LIVE=yes`. Market data always comes from the production public API (the testnet's candle history is tiny and its order book is a toy); only orders are routed to the testnet.
 3. **Risk manager** — stop-loss, take-profit, per-trade position sizing, and a daily loss cap are enforced outside the strategy, so a misbehaving strategy can't bypass them.
+4. **Restart-safe** — the open position and daily-loss state persist to `trading.state_file` and are restored on startup, so a crash or reboot can't orphan a position beyond the reach of its stop-loss. Live restores are reconciled against actual exchange balances, and state from one mode (dry-run/testnet/live) is never loaded into another.
 
 ## Setup
 
+Requires **Python 3.10+** (`ccxt` no longer installs on 3.9). macOS ships an older
+Python with the Xcode command-line tools, so check `python3 --version` first and, if
+it reports 3.9 or older, install a current one with `brew install python` or from
+[python.org/downloads](https://www.python.org/downloads/) (then open a new terminal).
+
 ```bash
-python -m venv .venv && source .venv/bin/activate
+python3 -m venv .venv && source .venv/bin/activate
 pip install -r requirements.txt
 cp .env.example .env   # then add your API keys (not needed for backtesting/dry-run)
 ```
@@ -56,6 +62,8 @@ API keys are read from the environment (`.env` is supported), never from `config
 - **`sma_crossover`** (default) — trend-following; buys when the fast SMA crosses above the slow SMA, sells on the reverse cross. Params: `fast_period`, `slow_period`.
 - **`rsi_reversion`** — mean reversion; buys when RSI drops below `oversold`, sells above `overbought`. Params: `period`, `oversold`, `overbought`.
 - **`macd_momentum`** — momentum; buys when the MACD line crosses above its signal line, sells on the cross below. Params: `fast_period`, `slow_period`, `signal_period`.
+- **`trend_pullback`** — hybrid; buys short-term RSI pullbacks only while price holds above a slow SMA, exits when the pullback resolves or the trend breaks. Designed to avoid both trend-following whipsaw and mean-reversion knife-catching. Params: `trend_period`, `rsi_period`, `entry_rsi`, `exit_rsi`.
+- **`day_breakout`** — the classic previous-day-range volatility breakout (Larry Williams style): buys when price clears today's open plus `range_mult` × yesterday's range, flattens before the UTC day ends. At most one entry per day. Params: `range_mult`, `trend_period` (0 disables the trend filter).
 
 To add your own, subclass `Strategy` in `fable_bot/strategies/` and register it in `fable_bot/strategies/__init__.py`. Strategies only emit BUY/SELL/HOLD signals; entries, exits, and sizing stay with the trader and risk manager.
 
@@ -64,6 +72,11 @@ To add your own, subclass `Strategy` in `fable_bot/strategies/` and register it 
 `python main.py optimize` grid-searches every registered strategy's parameters with **walk-forward validation**: configurations are tuned on the first 70% of the history and ranked by how they perform on the unseen final 30%. This guards against the classic trap of picking a config that merely memorized the past. Rank by the `test ret` column; a config whose `train ret` is great but whose `test ret` is poor is overfit and should not be trusted.
 
 Realistic expectations: a sound spot strategy earns **single-digit percent per month** with losing stretches, not fixed daily profits. Any tool or person promising guaranteed daily returns (e.g. "30% a day") is describing something mathematically impossible to sustain — treat it as a scam signal.
+
+## Running 24/7
+
+See [DEPLOY.md](DEPLOY.md) for putting the bot on an always-on server (free
+Oracle Cloud VM, cheap VPS, or any container host) with systemd or Docker.
 
 ## Tests
 

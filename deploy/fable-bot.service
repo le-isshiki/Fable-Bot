@@ -1,0 +1,28 @@
+# systemd unit for running Fable-Bot on a Linux server.
+#
+# Install (adjust paths/user if your setup differs):
+#   sudo cp deploy/fable-bot.service /etc/systemd/system/
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now fable-bot
+#
+# Logs:    journalctl -u fable-bot -f
+# Update:  cd ~/Fable-Bot && git pull && sudo systemctl restart fable-bot
+
+[Unit]
+Description=Fable-Bot Binance trading bot
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=ubuntu
+WorkingDirectory=/home/ubuntu/Fable-Bot
+ExecStart=/home/ubuntu/Fable-Bot/.venv/bin/python main.py run
+Restart=always
+RestartSec=10
+# Never let the service see live-trading confirmation by accident;
+# set FABLE_BOT_CONFIRM_LIVE=yes here only when you deliberately go live.
+Environment=PYTHONUNBUFFERED=1
+
+[Install]
+WantedBy=multi-user.target
