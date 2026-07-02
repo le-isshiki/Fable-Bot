@@ -9,11 +9,13 @@ trading:
   # Number of candles fetched each cycle (must cover the slowest indicator window).
   candle_history: 200
 
+# Top walk-forward result on 3000 hourly candles (2026-07-01):
+# +0.18% out-of-sample net of fees, 0.70% max drawdown, 11 trades, 45% win rate.
 strategy:
   name: sma_crossover
   params:
     fast_period: 9
-    slow_period: 21
+    slow_period: 50
 
 risk:
   # Fraction of the quote-currency balance committed per position.
