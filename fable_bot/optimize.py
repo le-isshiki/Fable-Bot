@@ -32,6 +32,12 @@ PARAM_GRIDS: dict[str, dict[str, list]] = {
         "slow_period": [21, 26, 35],
         "signal_period": [9],
     },
+    "trend_pullback": {
+        "trend_period": [50, 100, 200],
+        "rsi_period": [7, 14],
+        "entry_rsi": [35.0, 40.0, 45.0],
+        "exit_rsi": [60.0, 70.0],
+    },
 }
 
 
