@@ -57,6 +57,22 @@ class Candidate:
         return result.return_pct - result.max_drawdown_pct
 
 
+def buy_and_hold(candles: list[list[float]]) -> tuple[float, float]:
+    """(return, max drawdown) of simply holding from first to last close.
+
+    The baseline every strategy must justify itself against — though note
+    the exposure difference: strategies here risk only max_position_pct of
+    the balance at a time, buy-and-hold risks all of it.
+    """
+    prices = [c[4] for c in candles]
+    peak = prices[0]
+    max_dd = 0.0
+    for p in prices:
+        peak = max(peak, p)
+        max_dd = max(max_dd, (peak - p) / peak)
+    return (prices[-1] - prices[0]) / prices[0], max_dd
+
+
 def _param_combos(grid: dict[str, list]) -> list[dict]:
     keys = list(grid)
     return [dict(zip(keys, combo)) for combo in itertools.product(*(grid[k] for k in keys))]

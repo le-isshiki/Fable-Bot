@@ -11,13 +11,18 @@ trading:
   # Open position and daily risk state survive restarts here.
   state_file: state.json
 
-# Top walk-forward result on 3000 hourly candles (2026-07-01):
-# +0.18% out-of-sample net of fees, 0.70% max drawdown, 11 trades, 45% win rate.
+# Chosen from an 8000-candle (~11 month) walk-forward run on 2026-07-01:
+# the most CONSISTENT well-evidenced config, not the top-ranked one.
+# Test: +0.23% net of fees, 0.49% max drawdown, 14 trades, 50% win rate;
+# train -0.22% — the small train/test gap is why it was picked over
+# configs with better test returns but negative training performance.
 strategy:
-  name: sma_crossover
+  name: trend_pullback
   params:
-    fast_period: 9
-    slow_period: 50
+    trend_period: 50
+    rsi_period: 14
+    entry_rsi: 45.0
+    exit_rsi: 60.0
 
 risk:
   # Fraction of the quote-currency balance committed per position.

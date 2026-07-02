@@ -81,6 +81,15 @@ def test_format_report_mentions_overfitting_warning():
     assert "overfit" in report
 
 
+def test_buy_and_hold_baseline():
+    from fable_bot.optimize import buy_and_hold
+
+    candles = [[float(i), c, c, c, c, 1.0] for i, c in enumerate([100.0, 120.0, 90.0, 110.0])]
+    ret, max_dd = buy_and_hold(candles)
+    assert ret == (110.0 - 100.0) / 100.0
+    assert max_dd == (120.0 - 90.0) / 120.0
+
+
 def test_csv_roundtrip(tmp_path):
     candles = synthetic_candles(50)
     path = tmp_path / "candles.csv"
