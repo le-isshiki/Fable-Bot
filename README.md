@@ -72,6 +72,11 @@ To add your own, subclass `Strategy` in `fable_bot/strategies/` and register it 
 
 Realistic expectations: a sound spot strategy earns **single-digit percent per month** with losing stretches, not fixed daily profits. Any tool or person promising guaranteed daily returns (e.g. "30% a day") is describing something mathematically impossible to sustain — treat it as a scam signal.
 
+## Running 24/7
+
+See [DEPLOY.md](DEPLOY.md) for putting the bot on an always-on server (free
+Oracle Cloud VM, cheap VPS, or any container host) with systemd or Docker.
+
 ## Tests
 
 ```bash
