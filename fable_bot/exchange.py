@@ -2,6 +2,11 @@
 
 In dry-run mode market data is real but orders never leave the process:
 fills are simulated at the latest price against a paper balance.
+
+Market data (candles, tickers) always comes from the production public API,
+even in testnet mode: the testnet's order book is a toy and its candle
+history is tiny and resets, so backtests and signals run on it are garbage.
+Only orders are routed to the testnet.
 """
 
 import logging
@@ -11,6 +16,9 @@ import ccxt
 from fable_bot.config import ExchangeConfig
 
 log = logging.getLogger(__name__)
+
+# Binance returns at most this many candles per OHLCV request.
+_MAX_CANDLE_BATCH = 1000
 
 
 class Exchange:
@@ -24,15 +32,40 @@ class Exchange:
         })
         if cfg.testnet:
             self.client.set_sandbox_mode(True)
+            # Public market data needs no keys; keep it on production.
+            self.data_client = ccxt.binance({
+                "enableRateLimit": True,
+                "options": {"defaultType": "spot"},
+            })
+        else:
+            self.data_client = self.client
 
         # Paper balances used only in dry-run mode, keyed by currency code.
         self._paper: dict[str, float] = {"QUOTE": paper_quote_balance, "BASE": 0.0}
 
     def fetch_candles(self, symbol: str, timeframe: str, limit: int) -> list[list[float]]:
-        return self.client.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+        """Fetch the `limit` most recent candles, paginating past the per-request cap."""
+        if limit <= _MAX_CANDLE_BATCH:
+            return self.data_client.fetch_ohlcv(symbol, timeframe=timeframe, limit=limit)
+
+        tf_ms = ccxt.Exchange.parse_timeframe(timeframe) * 1000
+        since = self.data_client.milliseconds() - limit * tf_ms
+        candles: list[list[float]] = []
+        while len(candles) < limit:
+            batch = self.data_client.fetch_ohlcv(
+                symbol, timeframe=timeframe, since=since, limit=_MAX_CANDLE_BATCH
+            )
+            fresh = [c for c in batch if not candles or c[0] > candles[-1][0]]
+            if not fresh:
+                break
+            candles.extend(fresh)
+            since = candles[-1][0] + 1
+        if len(candles) < limit:
+            log.warning("Requested %d candles but the exchange only had %d", limit, len(candles))
+        return candles[-limit:]
 
     def last_price(self, symbol: str) -> float:
-        return float(self.client.fetch_ticker(symbol)["last"])
+        return float(self.data_client.fetch_ticker(symbol)["last"])
 
     def balances(self, symbol: str) -> tuple[float, float]:
         """Return (base_free, quote_free) for the given symbol, e.g. (BTC, USDT)."""
