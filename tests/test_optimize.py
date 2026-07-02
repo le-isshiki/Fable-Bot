@@ -1,9 +1,10 @@
 import math
 import random
 
+from fable_bot.backtest import BacktestResult
 from fable_bot.config import RiskConfig
 from fable_bot.data import load_csv, save_csv
-from fable_bot.optimize import PARAM_GRIDS, format_report, optimize
+from fable_bot.optimize import MIN_TEST_TRADES, PARAM_GRIDS, Candidate, format_report, optimize
 from fable_bot.strategies import STRATEGIES, Signal
 from fable_bot.strategies.macd_momentum import MacdMomentum
 
@@ -43,8 +44,27 @@ def test_optimize_ranks_by_out_of_sample_score():
     results = optimize(synthetic_candles(), RiskConfig(min_order_quote=1.0), top_n=5)
     assert results
     assert all(c.test is not None for c in results)
-    scores = [c.score(c.test) for c in results]
-    assert scores == sorted(scores, reverse=True)
+    # Two-tier ranking: enough-evidence configs first, then by score within each tier.
+    keys = [(c.test.trades >= MIN_TEST_TRADES, c.score(c.test)) for c in results]
+    assert keys == sorted(keys, reverse=True)
+
+
+def test_format_report_flags_thin_evidence():
+    def result(trades: int, ending: float) -> BacktestResult:
+        return BacktestResult(trades=trades, wins=trades,
+                              starting_balance=1000.0, ending_balance=ending)
+
+    lucky_fluke = Candidate(strategy="sma_crossover", params={"fast_period": 5},
+                            train=result(1, 1001.0), test=result(1, 1050.0))
+    solid = Candidate(strategy="sma_crossover", params={"fast_period": 9},
+                      train=result(10, 1010.0), test=result(10, 1010.0))
+    report = format_report([solid, lucky_fluke], 1000, "1h")
+    assert "*" in report
+    assert "anecdote" in report
+    solid_line = next(l for l in report.splitlines() if "fast_period=9" in l)
+    fluke_line = next(l for l in report.splitlines() if "fast_period=5" in l)
+    assert "*" not in solid_line
+    assert "*" in fluke_line
 
 
 def test_optimize_respects_strategy_subset():
