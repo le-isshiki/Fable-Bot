@@ -52,7 +52,30 @@ Update it:
 cd ~/Fable-Bot && git pull && sudo systemctl restart fable-bot
 ```
 
-## Docker alternative (Koyeb, Fly, any container host)
+## Koyeb free tier (web service + keepalive)
+
+Koyeb's free tier only runs **web services** and puts them to sleep without
+traffic. The bot handles this: when the `PORT` env var is set (Koyeb sets it
+automatically), it serves a JSON status page — position, balances, uptime —
+so it passes health checks, can be pinged awake, and doubles as a phone-friendly
+dashboard.
+
+1. Koyeb dashboard → **Create Web Service** → GitHub → select this repo and branch.
+2. Builder: **Dockerfile**. Region: **Frankfurt** (US regions are geo-blocked by
+   Binance). Instance: **Free**.
+3. To use the once-or-twice-a-day profile, override the run command to:
+   `python main.py --config config.daily.yaml run`
+4. Deploy, then open the public URL — you should see the bot's status JSON.
+5. **Keepalive**: create a free monitor at [uptimerobot.com](https://uptimerobot.com)
+   (or cron-job.org) pinging your Koyeb URL every 5 minutes, so the free
+   instance never goes to sleep.
+
+Caveats of the free tier, stated honestly: no persistent disk (`state.json` is
+lost on redeploys — harmless for paper trading, not acceptable for live), and
+the keepalive ping is a workaround, not a guarantee. Fine for the paper phase;
+move to a VM (above) before trading real funds.
+
+## Docker alternative (Koyeb paid, Fly, any container host)
 
 ```bash
 touch state.json           # once, so the volume mount is a file not a dir

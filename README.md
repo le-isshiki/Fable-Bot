@@ -63,6 +63,7 @@ API keys are read from the environment (`.env` is supported), never from `config
 - **`rsi_reversion`** — mean reversion; buys when RSI drops below `oversold`, sells above `overbought`. Params: `period`, `oversold`, `overbought`.
 - **`macd_momentum`** — momentum; buys when the MACD line crosses above its signal line, sells on the cross below. Params: `fast_period`, `slow_period`, `signal_period`.
 - **`trend_pullback`** — hybrid; buys short-term RSI pullbacks only while price holds above a slow SMA, exits when the pullback resolves or the trend breaks. Designed to avoid both trend-following whipsaw and mean-reversion knife-catching. Params: `trend_period`, `rsi_period`, `entry_rsi`, `exit_rsi`.
+- **`day_breakout`** — the classic previous-day-range volatility breakout (Larry Williams style): buys when price clears today's open plus `range_mult` × yesterday's range, flattens before the UTC day ends. At most one entry per day. Params: `range_mult`, `trend_period` (0 disables the trend filter).
 
 To add your own, subclass `Strategy` in `fable_bot/strategies/` and register it in `fable_bot/strategies/__init__.py`. Strategies only emit BUY/SELL/HOLD signals; entries, exits, and sizing stay with the trader and risk manager.
 

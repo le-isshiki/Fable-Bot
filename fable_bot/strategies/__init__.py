@@ -1,4 +1,5 @@
 from fable_bot.strategies.base import Signal, Strategy
+from fable_bot.strategies.day_breakout import DayBreakout
 from fable_bot.strategies.macd_momentum import MacdMomentum
 from fable_bot.strategies.rsi_reversion import RsiReversion
 from fable_bot.strategies.sma_crossover import SmaCrossover
@@ -9,6 +10,7 @@ STRATEGIES: dict[str, type[Strategy]] = {
     "rsi_reversion": RsiReversion,
     "macd_momentum": MacdMomentum,
     "trend_pullback": TrendPullback,
+    "day_breakout": DayBreakout,
 }
 
 

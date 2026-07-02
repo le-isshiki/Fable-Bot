@@ -44,7 +44,15 @@ def cmd_run(args: argparse.Namespace) -> int:
 
     exchange = Exchange(cfg.exchange, dry_run=dry_run, paper_quote_balance=args.paper_balance)
     store = StateStore(cfg.trading.state_file)
-    Trader(cfg, exchange, store=store).run_forever()
+    trader = Trader(cfg, exchange, store=store)
+
+    # PaaS platforms (Koyeb etc.) set PORT and expect something listening on it.
+    port = os.environ.get("PORT")
+    if port:
+        from fable_bot.status_server import start_status_server
+        start_status_server(trader, int(port))
+
+    trader.run_forever()
     return 0
 
 

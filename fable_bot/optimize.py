@@ -42,6 +42,10 @@ PARAM_GRIDS: dict[str, dict[str, list]] = {
         "entry_rsi": [35.0, 40.0, 45.0],
         "exit_rsi": [60.0, 70.0],
     },
+    "day_breakout": {
+        "range_mult": [0.3, 0.5, 0.7],
+        "trend_period": [0, 100],
+    },
 }
 
 
